@@ -4,7 +4,7 @@
 
 <Id>12345678-1234-1234-1234-123456789012</Id>
 
-<Version>1.1.0</Version>
+<Version>1.2.0</Version>
 
 <ProviderName>Email Translator</ProviderName>
 
@@ -155,8 +155,6 @@
 
 -<Action xsi:type="ShowTaskpane">
 
-<TaskpaneId>ButtonId1</TaskpaneId>
-
 <SourceLocation resid="Taskpane.Url"/>
 
 </Action>
@@ -208,8 +206,6 @@
 
 -<Action xsi:type="ShowTaskpane">
 
-<TaskpaneId>ButtonId2</TaskpaneId>
-
 <SourceLocation resid="Taskpane.Url"/>
 
 </Action>
@@ -234,11 +230,11 @@
 
 -<bt:Images>
 
-<bt:Image DefaultValue="https://hrmmimino-source.github.io/email-translator/icon16.png" id="Icon.16x16"/>
+<bt:Image DefaultValue="https://hrmmimino-source.github.io/email-translator/taskpane.html" id="Icon.16x16"/>
 
-<bt:Image DefaultValue="https://hrmmimino-source.github.io/email-translator/icon32.png" id="Icon.32x32"/>
+<bt:Image DefaultValue="https://hrmmimino-source.github.io/email-translator/taskpane.html" id="Icon.32x32"/>
 
-<bt:Image DefaultValue="https://hrmmimino-source.github.io/email-translator/icon80.png" id="Icon.80x80"/>
+<bt:Image DefaultValue="https://hrmmimino-source.github.io/email-translator/taskpane.html" id="Icon.80x80"/>
 
 </bt:Images>
 
