@@ -224,14 +224,11 @@
   <div class="logo">🌐</div>
   <div>
     <div class="title">Email Translator</div>
-    <div class="subtitle">Powered by Google Gemini</div>
+    <div class="subtitle">Powered by MyMemory</div>
   </div>
   <span class="status-pill status-idle" id="status">მზად</span>
 </div>
 
-<!-- API Key setup (shown if not saved) -->
-<div class="api-setup" id="api-setup">
-  <div class="card-label">⚙ API გასაღები (ერთხელ)</div>
   <div class="api-hint">Google Gemini-ს API key ჩასვი (უფასო) — ბრაუზერში ინახება, სხვას არ ეგზავნება. მოიპოვე: aistudio.google.com</div>
   <input class="api-input" type="password" id="api-key-input" placeholder="AIza..."/>
   <button class="btn-primary" style="width:100%" onclick="saveApiKey()">შენახვა</button>
@@ -281,32 +278,27 @@
 
 <script>
 Office.onReady(function(info) {
-  checkApiKey();
+  setStatus('მზად', 'status-ready');
 });
 
-// ---- API Key management ----
-function saveApiKey() {
-  const key = document.getElementById('api-key-input').value.trim();
-  if (!key.startsWith('AIza')) {
-    alert('API key უნდა იწყებოდეს AIza...-ით (Google Gemini)');
-    return;
-  }
-  localStorage.setItem('gemini_api_key', key);
-  document.getElementById('api-setup').style.display = 'none';
-  setStatus('მზად', 'status-ready');
-}
+// Language code map for MyMemory
+const LANG_CODES = {
+  'German': 'de', 'French': 'fr', 'Russian': 'ru', 'Spanish': 'es',
+  'Italian': 'it', 'Polish': 'pl', 'Greek': 'el',
+  'Brazilian Portuguese': 'pt-BR', 'Chinese': 'zh', 'Japanese': 'ja',
+  'Arabic': 'ar', 'English': 'en', 'Georgian': 'ka'
+};
 
-function checkApiKey() {
-  const key = localStorage.getItem('gemini_api_key');
-  if (key) {
-    document.getElementById('api-setup').style.display = 'none';
-    setStatus('მზად', 'status-ready');
-  }
-}
+const LANG_FLAGS = {
+  'de':'🇩🇪','fr':'🇫🇷','ru':'🇷🇺','es':'🇪🇸','it':'🇮🇹','pl':'🇵🇱',
+  'el':'🇬🇷','pt-BR':'🇧🇷','zh':'🇨🇳','ja':'🇯🇵','ar':'🇸🇦','en':'🇬🇧','ka':'🇬🇪'
+};
 
-function getApiKey() {
-  return localStorage.getItem('gemini_api_key') || '';
-}
+const LANG_NAMES = {
+  'de':'German','fr':'French','ru':'Russian','es':'Spanish','it':'Italian',
+  'pl':'Polish','el':'Greek','pt-BR':'Brazilian Portuguese','zh':'Chinese',
+  'ja':'Japanese','ar':'Arabic','en':'English','ka':'Georgian'
+};
 
 // ---- Status helper ----
 function setStatus(text, cls) {
@@ -315,11 +307,30 @@ function setStatus(text, cls) {
   el.className = 'status-pill ' + cls;
 }
 
+// ---- MyMemory translate ----
+async function myMemoryTranslate(text, fromLang, toLang) {
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('თარგმანის სერვისი მიუწვდომელია');
+  const data = await response.json();
+  if (data.responseStatus !== 200) throw new Error(data.responseDetails || 'თარგმანის შეცდომა');
+  return data.responseData.translatedText;
+}
+
+// ---- Detect language ----
+async function detectLanguage(text) {
+  const snippet = text.substring(0, 200);
+  // Try translating from auto-detect to English
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(snippet)}&langpair=autodetect|en`;
+  const response = await fetch(url);
+  const data = await response.json();
+  // MyMemory returns detected lang in responseData
+  const detectedCode = data.responseData?.detectedLanguage || 'unknown';
+  return detectedCode;
+}
+
 // ---- Translate incoming email ----
 async function translateIncoming() {
-  const apiKey = getApiKey();
-  if (!apiKey) { alert('API key არ არის შენახული!'); return; }
-
   const btn = document.getElementById('translate-btn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>თარგმნა...';
@@ -334,67 +345,59 @@ async function translateIncoming() {
         return;
       }
 
-      const emailText = result.value.substring(0, 3000);
-      const prompt = `You are an email translation assistant. 
-First detect the language of this email (if it's already in English, say so).
-Then translate it to English clearly and naturally.
+      const emailText = result.value.substring(0, 1000).trim();
+      if (!emailText) { showError('მეილი ცარიელია'); resetBtn(); return; }
 
-Respond in this exact JSON format:
-{"detected_language": "German", "flag": "🇩🇪", "is_english": false, "translation": "...translated text here..."}
+      try {
+        const translated = await myMemoryTranslate(emailText, 'autodetect', 'en');
 
-If already in English: {"detected_language": "English", "flag": "🇬🇧", "is_english": true, "translation": ""}
+        // Detect lang
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(emailText.substring(0,100))}&langpair=autodetect|en`;
+        const r = await fetch(url);
+        const d = await r.json();
+        const detectedCode = (d.responseData?.detectedLanguage || 'unknown').toLowerCase().split('-')[0];
 
-Email content:
-${emailText}`;
+        if (detectedCode === 'en') {
+          document.getElementById('translated-output').innerHTML = '<div class="placeholder">მეილი უკვე ინგლისურადაა — თარგმანი საჭირო არ არის.</div>';
+          document.getElementById('detected-lang').style.display = 'none';
+          setStatus('ინგლისური', 'status-ready');
+        } else {
+          const flag = LANG_FLAGS[detectedCode] || '🌍';
+          const langName = LANG_NAMES[detectedCode] || detectedCode.toUpperCase();
+          document.getElementById('lang-flag').textContent = flag;
+          document.getElementById('lang-name').textContent = langName;
+          document.getElementById('detected-lang').style.display = 'inline-flex';
+          document.getElementById('translated-output').textContent = translated;
+          setStatus('თარგმნილია', 'status-ready');
 
-      const response = await callClaude(apiKey, prompt);
-      const cleaned = response.replace(/```json|```/g, '').trim();
-      const data = JSON.parse(cleaned);
-
-      if (data.is_english) {
-        document.getElementById('translated-output').innerHTML = '<div class="placeholder">მეილი უკვე ინგლისურადაა — თარგმანი საჭირო არ არის.</div>';
-        document.getElementById('detected-lang').style.display = 'none';
-        setStatus('ინგლისური', 'status-ready');
-      } else {
-        document.getElementById('lang-flag').textContent = data.flag;
-        document.getElementById('lang-name').textContent = data.detected_language;
-        document.getElementById('detected-lang').style.display = 'inline-flex';
-        document.getElementById('translated-output').textContent = data.translation;
-        setStatus('თარგმნილია', 'status-ready');
-
-        // Auto-set reply target language
-        const langMap = {
-          'German':'German','French':'French','Russian':'Russian',
-          'Spanish':'Spanish','Italian':'Italian','Chinese':'Chinese',
-          'Japanese':'Japanese','Arabic':'Arabic'
-        };
-        const sel = document.getElementById('target-lang');
-        for (let opt of sel.options) {
-          if (opt.value === langMap[data.detected_language]) { sel.value = opt.value; break; }
+          // Auto-set reply target language
+          const sel = document.getElementById('target-lang');
+          for (let opt of sel.options) {
+            if (LANG_CODES[opt.value] === detectedCode) { sel.value = opt.value; break; }
+          }
         }
+      } catch(e) {
+        showError('შეცდომა: ' + e.message);
+        setStatus('შეცდომა', 'status-error');
       }
+      resetBtn();
     });
   } catch(e) {
     showError('შეცდომა: ' + e.message);
     setStatus('შეცდომა', 'status-error');
+    resetBtn();
   }
-
-  resetBtn();
 }
 
 // ---- Translate & insert reply ----
 async function translateReply() {
-  const apiKey = getApiKey();
-  if (!apiKey) { alert('API key არ არის შენახული!'); return; }
-
   const text = document.getElementById('reply-text').value.trim();
   if (!text) { alert('ჩაწერე პასუხი!'); return; }
 
   const targetLang = document.getElementById('target-lang').value;
-  if (targetLang === 'English') {
-    insertReply(text);
-    return;
-  }
+  if (targetLang === 'English') { insertReply(text); return; }
+
+  const targetCode = LANG_CODES[targetLang] || 'en';
 
   const btn = document.getElementById('reply-btn');
   btn.disabled = true;
@@ -402,8 +405,7 @@ async function translateReply() {
   setStatus('თარგმნა...', 'status-detecting');
 
   try {
-    const prompt = `Translate this text to ${targetLang}. Return ONLY the translated text, nothing else:\n\n${text}`;
-    const translated = await callClaude(apiKey, prompt);
+    const translated = await myMemoryTranslate(text, 'en', targetCode);
     insertReply(translated.trim());
     document.getElementById('success-msg').style.display = 'block';
     document.getElementById('reply-text').value = '';
@@ -420,27 +422,6 @@ async function translateReply() {
 
 function insertReply(text) {
   Office.context.mailbox.item.body.setAsync(text, { coercionType: Office.CoercionType.Text });
-}
-
-// ---- Gemini API call ----
-async function callClaude(apiKey, prompt) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 1500, temperature: 0.1 }
-    })
-  });
-
-  if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.error?.message || 'API შეცდომა');
-  }
-
-  const data = await response.json();
-  return data.candidates[0].content.parts[0].text;
 }
 
 // ---- Helpers ----
