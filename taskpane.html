@@ -199,11 +199,20 @@ async function translateReply() {
   setStatus('თარგმნა...', 'status-detecting');
 
   try {
-    const sourceLang = /[\u10D0-\u10FF]/.test(text) ? 'ka' : 'en';
+    const georgianChars = (text.match(/[\u10D0-\u10FF]/g) || []).length;
+    const sourceLang = georgianChars > 3 ? 'ka' : 'en';
     const translated = await myMemoryTranslate(text, sourceLang, targetCode);
-    await navigator.clipboard.writeText(translated.trim());
+    const translatedText = translated.trim();
+    document.getElementById('reply-text').value = translatedText;
+    // Copy to clipboard with fallback
+    try {
+      await navigator.clipboard.writeText(translatedText);
+    } catch(e) {
+      const ta = document.getElementById('reply-text');
+      ta.select();
+      document.execCommand('copy');
+    }
     document.getElementById('success-msg').style.display = 'block';
-    document.getElementById('reply-text').value = '';
     setStatus('დაკოპირდა!', 'status-ready');
     setTimeout(() => { document.getElementById('success-msg').style.display = 'none'; }, 3000);
   } catch(e) {
@@ -216,7 +225,10 @@ async function translateReply() {
 }
 
 function insertReply(text) {
-  navigator.clipboard.writeText(text);
+  document.getElementById('reply-text').value = text;
+  const ta = document.getElementById('reply-text');
+  ta.select();
+  document.execCommand('copy');
 }
 
 function clearTranslation() {
