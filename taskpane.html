@@ -265,6 +265,9 @@
       <option value="Russian">→ რუსული</option>
       <option value="Spanish">→ ესპანური</option>
       <option value="Italian">→ იტალიური</option>
+      <option value="Polish">→ პოლონური</option>
+      <option value="Greek">→ ბერძნული</option>
+      <option value="Brazilian Portuguese">→ ბრაზილიური პორტუგალიური</option>
       <option value="Chinese">→ ჩინური</option>
       <option value="Japanese">→ იაპონური</option>
       <option value="Arabic">→ არაბული</option>
@@ -421,7 +424,7 @@ function insertReply(text) {
 
 // ---- Gemini API call ----
 async function callClaude(apiKey, prompt) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
