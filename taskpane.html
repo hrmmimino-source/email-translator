@@ -87,9 +87,9 @@
       <option value="Arabic">→ არაბული</option>
       <option value="English">→ ინგლისური (უცვლელი)</option>
     </select>
-    <button class="btn-primary" onclick="translateReply()" id="reply-btn">გაგზავნა</button>
+    <button class="btn-primary" onclick="translateReply()" id="reply-btn">კოპირება</button>
   </div>
-  <div class="success-msg" id="success-msg">✓ პასუხი გაიგზავნა თარგმნილი სახით!</div>
+  <div class="success-msg" id="success-msg">✓ დაკოპირდა — ჩასვი მეილში (Ctrl+V)!</div>
   <div class="error-msg" id="error-msg"></div>
 </div>
 
@@ -199,11 +199,12 @@ async function translateReply() {
   setStatus('თარგმნა...', 'status-detecting');
 
   try {
-    const translated = await myMemoryTranslate(text, 'en', targetCode);
-    insertReply(translated.trim());
+    const sourceLang = /[\u10D0-\u10FF]/.test(text) ? 'ka' : 'en';
+    const translated = await myMemoryTranslate(text, sourceLang, targetCode);
+    await navigator.clipboard.writeText(translated.trim());
     document.getElementById('success-msg').style.display = 'block';
     document.getElementById('reply-text').value = '';
-    setStatus('გაგზავნილია', 'status-ready');
+    setStatus('დაკოპირდა!', 'status-ready');
     setTimeout(() => { document.getElementById('success-msg').style.display = 'none'; }, 3000);
   } catch(e) {
     showError('შეცდომა: ' + e.message);
@@ -211,11 +212,11 @@ async function translateReply() {
   }
 
   btn.disabled = false;
-  btn.textContent = 'გაგზავნა';
+  btn.textContent = "კოპირება";
 }
 
 function insertReply(text) {
-  Office.context.mailbox.item.body.setAsync(text, { coercionType: Office.CoercionType.Text });
+  navigator.clipboard.writeText(text);
 }
 
 function clearTranslation() {
