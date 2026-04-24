@@ -55,10 +55,17 @@
 
 <div class="card">
   <div class="card-label">შემოსული მეილი</div>
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+    <span style="font-size:11px;color:#999;">თარგმანი:</span>
+    <select id="incoming-lang" style="flex:1;border:1px solid #ddd;border-radius:6px;padding:4px 8px;font-size:11px;background:#fafaf8;">
+      <option value="en">ინგლისურად</option>
+      <option value="ka">ქართულად</option>
+    </select>
+  </div>
   <div id="detected-lang" class="lang-badge" style="display:none">
     <span id="lang-flag">🌍</span>
     <span id="lang-name">—</span>
-    → ინგლისური
+    <span id="target-label">→ ინგლისური</span>
   </div>
   <div id="translated-output" class="translated-body">
     <div class="placeholder">გახსენი მეილი, შემდეგ დააჭირე "თარგმნა"</div>
@@ -74,22 +81,24 @@
   <textarea id="reply-text" placeholder="დაწერე ინგლისურად ან ქართულად..."></textarea>
   <div class="row">
     <select id="target-lang">
+      <option value="English">→ ინგლისური</option>
+      <option value="Georgian">→ ქართული</option>
+      <option value="Russian">→ რუსული</option>
       <option value="German">→ გერმანული</option>
       <option value="French">→ ფრანგული</option>
-      <option value="Russian">→ რუსული</option>
       <option value="Spanish">→ ესპანური</option>
       <option value="Italian">→ იტალიური</option>
       <option value="Polish">→ პოლონური</option>
       <option value="Greek">→ ბერძნული</option>
-      <option value="Brazilian Portuguese">→ ბრაზილიური პორტუგალიური</option>
+      <option value="Portuguese">→ პორტუგალიური</option>
+      <option value="Hebrew">→ ივრითი</option>
       <option value="Chinese">→ ჩინური</option>
       <option value="Japanese">→ იაპონური</option>
       <option value="Arabic">→ არაბული</option>
-      <option value="English">→ ინგლისური (უცვლელი)</option>
     </select>
-    <button class="btn-primary" onclick="translateReply()" id="reply-btn">კოპირება</button>
+    <button class="btn-primary" onclick="translateReply()" id="reply-btn">თარგმნა</button>
   </div>
-  <div class="success-msg" id="success-msg">✓ დაკოპირდა — ჩასვი მეილში (Ctrl+V)!</div>
+  <div class="success-msg" id="success-msg">✓ თარგმანი მზადაა — მონიშნე და დააკოპირე!</div>
   <div class="error-msg" id="error-msg"></div>
 </div>
 
@@ -99,9 +108,9 @@ Office.onReady(function(info) {
 });
 
 const LANG_CODES = {
-  'German':'de','French':'fr','Russian':'ru','Spanish':'es','Italian':'it',
-  'Polish':'pl','Greek':'el','Brazilian Portuguese':'pt-BR',
-  'Chinese':'zh','Japanese':'ja','Arabic':'ar','English':'en'
+  'English':'en','Georgian':'ka','Russian':'ru','German':'de','French':'fr',
+  'Spanish':'es','Italian':'it','Polish':'pl','Greek':'el',
+  'Portuguese':'pt','Hebrew':'he','Chinese':'zh','Japanese':'ja','Arabic':'ar'
 };
 
 const LANG_FLAGS = {
@@ -148,7 +157,9 @@ async function translateIncoming() {
       if (!emailText) { showError('მეილი ცარიელია'); resetBtn(); return; }
 
       try {
-        const url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(emailText.substring(0, 500)) + '&langpair=autodetect|en';
+        const incomingTarget = document.getElementById('incoming-lang').value;
+        document.getElementById('target-label').textContent = incomingTarget === 'ka' ? '→ ქართული' : '→ ინგლისური';
+        const url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(emailText.substring(0, 500)) + '&langpair=autodetect|' + incomingTarget + '&de=translation@email.com';
         const r = await fetch(url);
         const d = await r.json();
         const translated = d.responseData.translatedText;
@@ -204,31 +215,20 @@ async function translateReply() {
     const translated = await myMemoryTranslate(text, sourceLang, targetCode);
     const translatedText = translated.trim();
     document.getElementById('reply-text').value = translatedText;
-    // Copy to clipboard with fallback
-    try {
-      await navigator.clipboard.writeText(translatedText);
-    } catch(e) {
-      const ta = document.getElementById('reply-text');
-      ta.select();
-      document.execCommand('copy');
-    }
     document.getElementById('success-msg').style.display = 'block';
-    setStatus('დაკოპირდა!', 'status-ready');
-    setTimeout(() => { document.getElementById('success-msg').style.display = 'none'; }, 3000);
+    setStatus('თარგმნილია!', 'status-ready');
+    setTimeout(() => { document.getElementById('success-msg').style.display = 'none'; }, 4000);
   } catch(e) {
     showError('შეცდომა: ' + e.message);
     setStatus('შეცდომა', 'status-error');
   }
 
   btn.disabled = false;
-  btn.textContent = "კოპირება";
+  btn.textContent = "თარგმნა";
 }
 
 function insertReply(text) {
   document.getElementById('reply-text').value = text;
-  const ta = document.getElementById('reply-text');
-  ta.select();
-  document.execCommand('copy');
 }
 
 function clearTranslation() {
