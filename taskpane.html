@@ -55,17 +55,10 @@
 
 <div class="card">
   <div class="card-label">შემოსული მეილი</div>
-  <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-    <span style="font-size:11px;color:#999;">თარგმანი:</span>
-    <select id="incoming-lang" style="flex:1;border:1px solid #ddd;border-radius:6px;padding:4px 8px;font-size:11px;background:#fafaf8;">
-      <option value="en">ინგლისურად</option>
-      <option value="ka">ქართულად</option>
-    </select>
-  </div>
   <div id="detected-lang" class="lang-badge" style="display:none">
     <span id="lang-flag">🌍</span>
     <span id="lang-name">—</span>
-    <span id="target-label">→ ინგლისური</span>
+    → ინგლისური
   </div>
   <div id="translated-output" class="translated-body">
     <div class="placeholder">გახსენი მეილი, შემდეგ დააჭირე "თარგმნა"</div>
@@ -157,9 +150,7 @@ async function translateIncoming() {
       if (!emailText) { showError('მეილი ცარიელია'); resetBtn(); return; }
 
       try {
-        const incomingTarget = document.getElementById('incoming-lang').value;
-        document.getElementById('target-label').textContent = incomingTarget === 'ka' ? '→ ქართული' : '→ ინგლისური';
-        const params2 = new URLSearchParams({ q: emailText.substring(0, 500), langpair: 'autodetect|' + incomingTarget, de: 'translation@email.com' });
+        const params2 = new URLSearchParams({ q: emailText.substring(0, 500), langpair: 'autodetect|en', de: 'translation@email.com' });
         const r = await fetch('https://api.mymemory.translated.net/get?' + params2.toString());
         const d = await r.json();
         const translated = d.responseData.translatedText;
