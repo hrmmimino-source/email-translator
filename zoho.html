@@ -241,6 +241,12 @@ function clearIncoming() {
   document.getElementById('copy-incoming-btn').style.display = 'none';
   setStatus('მზად', 'status-ready');
 }
+  window.addEventListener("message", (event) => {
+  const text = event.data;
+  if (text && text.length > 20) {
+    document.getElementById("incoming-text").value = text;
+  }
+});
 </script>
 </body>
 </html>
