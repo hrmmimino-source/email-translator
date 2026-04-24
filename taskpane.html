@@ -131,8 +131,8 @@ function setStatus(text, cls) {
 }
 
 async function myMemoryTranslate(text, fromLang, toLang) {
-  const url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text) + '&langpair=' + fromLang + '|' + toLang;
-  const response = await fetch(url);
+  const params = new URLSearchParams({ q: text, langpair: fromLang + '|' + toLang, de: 'translation@email.com' });
+  const response = await fetch('https://api.mymemory.translated.net/get?' + params.toString());
   if (!response.ok) throw new Error('სერვისი მიუწვდომელია');
   const data = await response.json();
   if (data.responseStatus !== 200) throw new Error(data.responseDetails || 'თარგმანის შეცდომა');
@@ -159,8 +159,8 @@ async function translateIncoming() {
       try {
         const incomingTarget = document.getElementById('incoming-lang').value;
         document.getElementById('target-label').textContent = incomingTarget === 'ka' ? '→ ქართული' : '→ ინგლისური';
-        const url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(emailText.substring(0, 500)) + '&langpair=autodetect|' + incomingTarget + '&de=translation@email.com';
-        const r = await fetch(url);
+        const params2 = new URLSearchParams({ q: emailText.substring(0, 500), langpair: 'autodetect|' + incomingTarget, de: 'translation@email.com' });
+        const r = await fetch('https://api.mymemory.translated.net/get?' + params2.toString());
         const d = await r.json();
         const translated = d.responseData.translatedText;
         const detectedCode = (d.responseData.detectedLanguage || 'unknown').toLowerCase().split('-')[0];
